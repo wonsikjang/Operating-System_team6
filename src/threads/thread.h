@@ -139,11 +139,10 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 /* Alarm clock functions */
-void thread_sleep(int64_t ticks);
+void move_thread_block(int64_t ticks);
 
-void thread_awake(int64_t ticks);
+void move_thread_unblock(int64_t ticks);
 
-void update_next_tick_to_awake(int64_t ticks);
+bool compare_tick(const struct list_elem *x, const struct list_elem *y, void *aux); 
 
-int64_t get_next_tick_to_awake(void);
 #endif /* threads/thread.h */

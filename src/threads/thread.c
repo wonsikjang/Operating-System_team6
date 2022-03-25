@@ -47,7 +47,7 @@ struct kernel_thread_frame
 
 /* list for the blocked thread */
 static struct list block_list;
-static int next_min_tick_wakeup;
+
 
 
 /* Statistics. */
@@ -591,19 +591,52 @@ allocate_tid (void)
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
+
 /* make thread to blocked state and put in the block list */
-void thread_sleep(int64_t ticks){
-	struct thread cur_thread = thread.current();
+void move_thread_block(int64_t ticks){
+	struct thread *cur_thread = thread_current();
 	enum intr_level old_level;
 	old_level = intr_disable();
 
 	if (cur_thread != idle_thread){
-		list_push_back(&ready_list, &cur ->elem);	
+		cur_thread->wakeup_tick = ticks;
+		list_insert_ordered(&block_list, &cur_thread ->elem,compare_tick, NULL);	
 		cur_thread -> status = THREAD_BLOCKED; 
-		cur_thread -> wakeup_tick = ticks;	
+		schedule ();	
 	}
-	update_next_tick_to_awake(cur -> wakeup_tick = ticks);
 	intr_set_level(old_level);
 
 }
+
+
+
+//move a thread whose tick is less than ticks to unblocked list 
+void move_thread_unblock(int64_t ticks){
+	while(!list_empty(&block_list)){
+		struct list_elem *head = list_begin(&block_list);
+		int64_t first_tick = list_entry(head, struct thread,elem)->wakeup_tick;
+		if(first_tick <= ticks){
+			struct thread *will_unblock = list_entry(list_pop_front(&block_list), struct thread,elem);
+			thread_unblock(will_unblock);
+		}
+		else{
+			break;
+		}
+	}
+
+}
+//function for checking tick value between threads.
+bool compare_tick(const struct list_elem *x, const struct list_elem *y, void *aux){
+	struct thread *x_thread = list_entry(x, struct thread, elem);
+	struct thread *y_thread = list_entry(y, struct thread, elem);
+	if (x_thread -> wakeup_tick < y_thread -> wakeup_tick){
+		return true;
+	}
+	else{
+		return false;
+	}
+
+}
+
+
 

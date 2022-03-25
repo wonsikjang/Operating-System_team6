@@ -94,11 +94,8 @@ timer_sleep (int64_t ticks)
 	intr_get_level function : check whether interrupt is off or not */
   ASSERT (intr_get_level () == INTR_ON);
 
-  thread_sleep(start + ticks);
-/* original code   
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
-*/
+  move_thread_block(start + ticks);
+
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -177,6 +174,10 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+  /* call move_thread_unblock to awake the thread every ticks
+  */
+  move_thread_unblock(ticks);		
+
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
